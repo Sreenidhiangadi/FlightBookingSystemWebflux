@@ -14,8 +14,10 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class AuthService {
-	@Autowired
 	private UserRepository userRepository;
+	public AuthService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 	private Map<String, String> userSessions = new HashMap<>();
 
 	public Mono<User> register(User user) {

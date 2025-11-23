@@ -41,4 +41,6 @@ public class Flight {
 	@Min(value = 0, message = "Available seats cant be neagtive")
 	private int availableSeats;
 
+	
+
 }

@@ -32,42 +32,35 @@ public class FlightService {
 		return flightRepository.findAll();
 	}
 
-	public Mono<Flight> updateFlight(String id, Map<String, Object> updates) {
-		return flightRepository.findById(id).switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
-				.flatMap(flight -> {
-					try {
-						if (updates.containsKey("airline")) {
-							flight.setAirline((String) updates.get("airline"));
-						}
-						if (updates.containsKey("fromPlace")) {
-							flight.setFromPlace((String) updates.get("fromPlace"));
-						}
-						if (updates.containsKey("toPlace")) {
-							flight.setToPlace((String) updates.get("toPlace"));
-						}
-						if (updates.containsKey("departureTime")) {
-							flight.setDepartureTime(LocalDateTime.parse(updates.get("departureTime").toString()));
-						}
-						if (updates.containsKey("arrivalTime")) {
-							flight.setArrivalTime(LocalDateTime.parse(updates.get("arrivalTime").toString()));
-						}
-						if (updates.containsKey("price")) {
-							flight.setPrice(Integer.parseInt(updates.get("price").toString()));
-						}
-						if (updates.containsKey("totalSeats")) {
-							flight.setTotalSeats(Integer.parseInt(updates.get("totalSeats").toString()));
-						}
-						if (updates.containsKey("availableSeats")) {
-							flight.setAvailableSeats(Integer.parseInt(updates.get("availableSeats").toString()));
-						}
-					} catch (Exception e) {
-						return Mono.error(new RuntimeException("Invalid input format: " + e.getMessage()));
-					}
+	 public Mono<Flight> updateFlight(String id, Map<String, Object> updates) {
+	        return flightRepository.findById(id)
+	                .switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
+	                .flatMap(flight -> {
+	                    try {
+	                        applyUpdates(flight, updates);  // extracted method
+	                    } catch (Exception e) {
+	                        return Mono.error(new RuntimeException("Invalid input format: " + e.getMessage()));
+	                    }
+	                    return flightRepository.save(flight);
+	                });
+	    }
 
-					return flightRepository.save(flight);
-				});
-	}
+	    private void applyUpdates(Flight flight, Map<String, Object> updates) {
+	        setIfPresent(updates, "airline", val -> flight.setAirline((String) val));
+	        setIfPresent(updates, "fromPlace", val -> flight.setFromPlace((String) val));
+	        setIfPresent(updates, "toPlace", val -> flight.setToPlace((String) val));
+	        setIfPresent(updates, "departureTime", val -> flight.setDepartureTime(LocalDateTime.parse(val.toString())));
+	        setIfPresent(updates, "arrivalTime", val -> flight.setArrivalTime(LocalDateTime.parse(val.toString())));
+	        setIfPresent(updates, "price", val -> flight.setPrice(Integer.parseInt(val.toString())));
+	        setIfPresent(updates, "totalSeats", val -> flight.setTotalSeats(Integer.parseInt(val.toString())));
+	        setIfPresent(updates, "availableSeats", val -> flight.setAvailableSeats(Integer.parseInt(val.toString())));
+	    }
 
+	    private <T> void setIfPresent(Map<String, Object> updates, String key, java.util.function.Consumer<Object> setter) {
+	        if (updates.containsKey(key)) {
+	            setter.accept(updates.get(key));
+	        }
+	    }
 	public Mono<Flight> searchFlightById(String id) {
 		return flightRepository.findById(id)
 				.switchIfEmpty(Mono.error(new RuntimeException("Flight with this id is not present")));

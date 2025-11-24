@@ -19,7 +19,7 @@ import jakarta.validation.ValidatorFactory;
 	private static Validator validator;
 
 	@BeforeAll
-	public static void setupValidator() {
+	 static void setupValidator() {
 		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 		validator = factory.getValidator();
 	}

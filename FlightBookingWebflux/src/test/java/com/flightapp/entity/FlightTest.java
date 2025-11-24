@@ -14,7 +14,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
-public class FlightTest {
+ class FlightTest {
 
 	private static Validator validator;
 
@@ -38,14 +38,14 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testValidFlight() {
+	void testValidFlight() {
 		Flight flight = createValidFlight();
 		Set<ConstraintViolation<Flight>> violations = validator.validate(flight);
 		assertTrue(violations.isEmpty(), "Valid flight should have no violations");
 	}
 
 	@Test
-	public void testAirlineValidation() {
+	 void testAirlineValidation() {
 		Flight flight = createValidFlight();
 		flight.setAirline("");
 		Set<ConstraintViolation<Flight>> violations = validator.validate(flight);
@@ -53,7 +53,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testFromPlaceValidation() {
+	 void testFromPlaceValidation() {
 		Flight flight = createValidFlight();
 		flight.setFromPlace(null);
 		Set<ConstraintViolation<Flight>> violations = validator.validate(flight);
@@ -61,7 +61,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testToPlaceValidation() {
+	 void testToPlaceValidation() {
 		Flight flight = createValidFlight();
 		flight.setToPlace("");
 		Set<ConstraintViolation<Flight>> violations = validator.validate(flight);
@@ -69,7 +69,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testDepartureTimeValidation() {
+	 void testDepartureTimeValidation() {
 		Flight flight = createValidFlight();
 		flight.setDepartureTime(null);
 		Set<ConstraintViolation<Flight>> violations = validator.validate(flight);
@@ -77,7 +77,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testArrivalTimeValidation() {
+	 void testArrivalTimeValidation() {
 		Flight flight = createValidFlight();
 		flight.setArrivalTime(null);
 		Set<ConstraintViolation<Flight>> violations = validator.validate(flight);
@@ -85,7 +85,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testPriceValidation() {
+	 void testPriceValidation() {
 		Flight flight = createValidFlight();
 		flight.setPrice(0);
 		Set<ConstraintViolation<Flight>> violations = validator.validate(flight);
@@ -97,7 +97,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testTotalSeatsValidation() {
+	 void testTotalSeatsValidation() {
 		Flight flight = createValidFlight();
 		flight.setTotalSeats(0);
 		Set<ConstraintViolation<Flight>> violations = validator.validate(flight);
@@ -109,7 +109,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testAvailableSeatsValidation() {
+	 void testAvailableSeatsValidation() {
 		Flight flight = createValidFlight();
 		flight.setAvailableSeats(-1);
 		Set<ConstraintViolation<Flight>> violations = validator.validate(flight);
@@ -117,7 +117,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testGettersAndSetters() {
+	 void testGettersAndSetters() {
 		Flight flight = createValidFlight();
 		assertEquals("GoAir", flight.getAirline());
 		assertEquals("Hyderabad", flight.getFromPlace());
@@ -130,7 +130,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testDepartureAfterArrival() {
+	 void testDepartureAfterArrival() {
 		Flight flight = createValidFlight();
 		flight.setDepartureTime(LocalDateTime.of(2025, 1, 20, 12, 0));
 		flight.setArrivalTime(LocalDateTime.of(2025, 1, 20, 11, 0));
@@ -140,7 +140,7 @@ public class FlightTest {
 	}
 
 	@Test
-	public void testAvailableSeatsExceedTotalSeats() {
+	 void testAvailableSeatsExceedTotalSeats() {
 		Flight flight = createValidFlight();
 		flight.setTotalSeats(100);
 		flight.setAvailableSeats(120);

@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class FlightService {
-	public FlightRepository flightRepository;
+	private final FlightRepository flightRepository;
 	 public FlightService(FlightRepository flightRepository) {
 	        this.flightRepository = flightRepository;
 	    }

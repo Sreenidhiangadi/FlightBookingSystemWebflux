@@ -78,23 +78,19 @@ class FlightServiceTest {
 
 	@Test
 	void testUpdateFlightSuccess() {
-	    Map<String, Object> updates = new HashMap<>();
-	    updates.put("airline", "Air India");
-	    updates.put("price", 6000);
-	    updates.put("totalSeats", 150);      
-	    updates.put("availableSeats", 120);   
+		Map<String, Object> updates = new HashMap<>();
+		updates.put("airline", "Air India");
+		updates.put("price", 6000);
+		updates.put("totalSeats", 150);
+		updates.put("availableSeats", 120);
 
-	    when(flightRepository.findById("1")).thenReturn(Mono.just(flight));
-	    when(flightRepository.save(any(Flight.class))).thenReturn(Mono.just(flight));
+		when(flightRepository.findById("1")).thenReturn(Mono.just(flight));
+		when(flightRepository.save(any(Flight.class))).thenReturn(Mono.just(flight));
 
-	    StepVerifier.create(flightService.updateFlight("1", updates))
-	        .expectNextMatches(updated ->
-	            updated.getAirline().equals("Air India") &&
-	            updated.getPrice() == 6000 &&
-	            updated.getTotalSeats() == 150 &&
-	            updated.getAvailableSeats() == 120
-	        )
-	        .verifyComplete();
+		StepVerifier.create(flightService.updateFlight("1", updates))
+				.expectNextMatches(updated -> updated.getAirline().equals("Air India") && updated.getPrice() == 6000
+						&& updated.getTotalSeats() == 150 && updated.getAvailableSeats() == 120)
+				.verifyComplete();
 	}
 
 	@Test

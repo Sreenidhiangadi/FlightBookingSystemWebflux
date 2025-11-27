@@ -1,9 +1,6 @@
 package com.flightapp.service;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,56 +13,61 @@ import reactor.test.StepVerifier;
 
 class PassengerServiceTest {
 
-	private PassengerRepository passengerRepository;
-	private PassengerService passengerService;
+    private PassengerRepository passengerRepository;
+    private PassengerService passengerService;
 
-	private Passenger passenger1;
-	private Passenger passenger2;
+    private Passenger passenger1;
+    private Passenger passenger2;
 
-	@BeforeEach
-	void setUp() {
-		passengerRepository = mock(PassengerRepository.class);
-		passengerService = new PassengerService(passengerRepository);
+    @BeforeEach
+    void setUp() {
+        passengerRepository = mock(PassengerRepository.class);
+        passengerService = new PassengerService(passengerRepository); 
 
-		passenger1 = new Passenger();
-		passenger1.setId("P1");
-		passenger1.setName("John Doe");
-		passenger1.setTicketId("T1");
+        passenger1 = new Passenger();
+        passenger1.setId(1L);             
+        passenger1.setName("John Doe");
+        passenger1.setTicketId(100L);      
 
-		passenger2 = new Passenger();
-		passenger2.setId("P2");
-		passenger2.setName("Jane Smith");
-		passenger2.setTicketId("T1");
-	}
+        passenger2 = new Passenger();
+        passenger2.setId(2L);              
+        passenger2.setName("Jane Smith");
+        passenger2.setTicketId(100L);      
+    }
 
-	@Test
-	void testGetAllPassengers() {
-		when(passengerRepository.findAll()).thenReturn(Flux.just(passenger1, passenger2));
+    @Test
+    void testGetAllPassengers() {
+        when(passengerRepository.findAll()).thenReturn(Flux.just(passenger1, passenger2));
 
-		StepVerifier.create(passengerService.getAllPassengers()).expectNext(passenger1).expectNext(passenger2)
-				.verifyComplete();
+        StepVerifier.create(passengerService.getAllPassengers())
+                .expectNext(passenger1)
+                .expectNext(passenger2)
+                .verifyComplete();
 
-		verify(passengerRepository, times(1)).findAll();
-	}
+        verify(passengerRepository, times(1)).findAll();
+    }
 
-	@Test
-	void testGetPassengersByTicketId() {
-		String ticketId = "T1";
-		when(passengerRepository.findByTicketId(ticketId)).thenReturn(Flux.just(passenger1, passenger2));
+    @Test
+    void testGetPassengersByTicketId() {
+        Long ticketId = 100L;
+        when(passengerRepository.findByTicketId(ticketId)).thenReturn(Flux.just(passenger1, passenger2));
 
-		StepVerifier.create(passengerService.getPassengersByTicketId(ticketId)).expectNext(passenger1)
-				.expectNext(passenger2).verifyComplete();
+        StepVerifier.create(passengerService.getPassengersByTicketId(ticketId))
+                .expectNext(passenger1)
+                .expectNext(passenger2)
+                .verifyComplete();
 
-		verify(passengerRepository, times(1)).findByTicketId(ticketId);
-	}
+        verify(passengerRepository, times(1)).findByTicketId(ticketId);
+    }
 
-	@Test
-	void testGetPassengersByTicketId_Empty() {
-		String ticketId = "T2";
-		when(passengerRepository.findByTicketId(ticketId)).thenReturn(Flux.empty());
+    @Test
+    void testGetPassengersByTicketId_Empty() {
+        Long ticketId = 200L;
+        when(passengerRepository.findByTicketId(ticketId)).thenReturn(Flux.empty());
 
-		StepVerifier.create(passengerService.getPassengersByTicketId(ticketId)).verifyComplete();
+        StepVerifier.create(passengerService.getPassengersByTicketId(ticketId))
+                .verifyComplete();
 
-		verify(passengerRepository, times(1)).findByTicketId(ticketId);
-	}
+        verify(passengerRepository, times(1)).findByTicketId(ticketId);
+    }
 }

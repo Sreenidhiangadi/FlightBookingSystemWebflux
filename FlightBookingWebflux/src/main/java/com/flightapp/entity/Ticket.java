@@ -1,49 +1,51 @@
 package com.flightapp.entity;
 
 import java.time.LocalDateTime;
-import java.util.List;
-
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.relational.core.mapping.Column;
 
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-@Document(collection = "tickets")
+@Table("ticket")
 public class Ticket {
 
-	@Id
-	private String id;
+    @Id
+    private Long id;
 
-	
-	private String pnr;
+    @NotBlank(message = "PNR cannot be blank")
+    @Column("pnr")
+    private String pnr;
 
-	@NotBlank(message = "User ID is required")
-	private String userId;
+    @NotNull(message = "User ID is required")
+    @Column("user_id")
+    private Long userId;
 
-	@NotBlank(message = "Departure flight is required")
-	private String departureFlightId;
+    @NotNull(message = "Departure flight is required")
+    @Column("departure_flight_id")
+    private Long departureFlightId;
 
-	private String returnFlightId;
+    @Column("return_flight_id")
+    private Long returnFlightId;
 
-	@NotNull(message = "Trip type is required")
-	private FlightType tripType;
+    @Column("trip_type")
+    private FlightType tripType;
 
-	
-	private LocalDateTime bookingTime;
+    @Column("booking_time")
+    private LocalDateTime bookingTime;
 
-	private String seatsBooked;
+    @Column("number_of_seats")
+    private int numberOfSeats;
 
-	private String mealType;
+    @Column("meal_type")
+    private String mealType;
 
-	@Min(value = 0, message = "Total price must be positive")
-	private Double totalPrice;
+    @Column("total_price")
+    private Double totalPrice;
 
-	private boolean canceled;
-	@Transient
-	private List<Passenger> passengers;
+    @Column("canceled")
+    private boolean canceled = false;
 }

@@ -1,14 +1,14 @@
 package com.flightapp.repository;
 
-import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
+
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.flightapp.entity.Ticket;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface TicketRepository extends ReactiveMongoRepository<Ticket, String> {
+public interface TicketRepository extends ReactiveCrudRepository<Ticket,Long>{
 	Mono<Ticket> findByPnr(String pnr);
-
-	Flux<Ticket> findByUserId(String userId);
+    Flux<Ticket> findByUserId(Long userId);
 }

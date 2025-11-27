@@ -1,94 +1,113 @@
 package com.flightapp.controller;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.flightapp.entity.Flight;
-import com.flightapp.entity.Ticket;
-import com.flightapp.entity.User;
-import com.flightapp.service.AuthService;
-import com.flightapp.service.FlightService;
-import com.flightapp.service.TicketService;
-
-import jakarta.validation.Valid;
-import reactor.core.publisher.Flux;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
+
+import com.flightapp.entity.*;
+import com.flightapp.service.*;
+import org.springframework.http.HttpStatus;
 
 @RestController
-@RequestMapping("/api/flight")
+@RequestMapping("/api/v1.0/flight")
 public class UserController {
-	private final AuthService authService;
-	private final FlightService flightService;
-	private final TicketService ticketService;
 
-	public UserController(AuthService authService, FlightService flightService, TicketService ticketService) {
-		this.authService = authService;
-		this.flightService = flightService;
-		this.ticketService = ticketService;
-	}
+    private final AuthService authService;
+    private final FlightService flightService;
+    private final TicketService ticketService;
 
-	@PostMapping("/user/register")
-	public Mono<User> register(@Valid @RequestBody User user) {
-		return authService.register(user);
-	}
+    public UserController(AuthService authService, FlightService flightService, TicketService ticketService) {
+        this.authService = authService;
+        this.flightService = flightService;
+        this.ticketService = ticketService;
+    }
 
-	@PostMapping("/user/login")
-	public Mono<String> userLogin(@Valid @RequestBody User user) {
-		return authService.login(user.getEmail(), user.getPassword()).switchIfEmpty(Mono.just("Invalid credentials"));
-	}
+    @PostMapping("/user/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<User> register(@RequestBody User user) {
+        return authService.register(user);
+    }
 
-	@PostMapping("/search")
-	public Flux<Flight> searchFlights(@Valid @RequestBody Flight f) {
-		return flightService.searchFlights(f.getFromPlace(), f.getToPlace(), f.getDepartureTime(), f.getArrivalTime());
-	}
+    @PostMapping("/user/login")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<ResponseEntity<String>> userLogin(@RequestBody User user) {
+        return authService.login(user.getEmail(), user.getPassword())
+                .map(session -> ResponseEntity.ok(session))
+                .onErrorResume(e -> Mono.just(ResponseEntity.status(401).body(e.getMessage())));
+    }
 
-	@PostMapping("/search/airline")
-	public Flux<Flight> searchByAirline(@Valid @RequestBody Map<String, String> body) {
-		return flightService.searchFlightsByAirline(body.get("fromPlace"), body.get("toPlace"), body.get("airline"));
-	}
+    @PostMapping("/search")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Flux<Flight> searchFlights(@RequestBody Map<String, String> body) {
+        String from = body.get("fromPlace");
+        String to = body.get("toPlace");
+        LocalDateTime start = LocalDateTime.parse(body.get("start"));
+        LocalDateTime end = LocalDateTime.parse(body.get("end"));
 
-	@GetMapping("/allflights")
-	public Flux<Flight> getAllFlights() {
-		return flightService.getAllFlights();
-	}
+        return flightService.searchFlights(from, to, start, end);
+    }
 
-	@PostMapping("/booking")
-	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<ResponseEntity<Map<String, String>>> bookTicket(@Valid @RequestBody Ticket ticket) {
-	    return ticketService.bookTicket(
-	            ticket.getUserId(),
-	            ticket.getDepartureFlightId(),
-	            ticket.getReturnFlightId(),
-	            ticket.getPassengers(),
-	            ticket.getTripType()
-	        )
-	        .map(pnr -> ResponseEntity.ok(Map.of("pnr", pnr)));
-	}
+    @PostMapping("/search/airline")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Flux<Flight> searchByAirline(@RequestBody Map<String, String> body) {
+        String from = body.get("fromPlace");
+        String to = body.get("toPlace");
+        String airline = body.get("airline");
 
+        return flightService.searchFlightsByAirline(from, to, airline);
+    }
 
-	@GetMapping("/ticket/{pnr}")
-	public Mono<Ticket> getTicket(@PathVariable String pnr) {
-		return ticketService.getTicketByPnr(pnr);
-	}
+    @PostMapping("/booking")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<String> bookTicket(@RequestBody Map<String, Object> body) {
+        Long userId = Long.parseLong(body.get("userId").toString());
+        Long departureFlightId = Long.parseLong(body.get("departureFlightId").toString());
+        FlightType tripType = FlightType.valueOf(body.get("tripType").toString());
 
-	@GetMapping("/booking/history/{email}")
-	public Flux<Ticket> history(@PathVariable String email) {
-		return ticketService.getHistory(email);
-	}
+        Long returnFlightId = body.containsKey("returnFlightId")
+                ? Long.parseLong(body.get("returnFlightId").toString())
+                : null;
 
-	@DeleteMapping("/booking/cancel/{pnr}")
-	public Mono<String> cancel(@PathVariable String pnr) {
-		return ticketService.cancelTicket(pnr);
-	}
+        List<Map<String, Object>> passengerList = (List<Map<String, Object>>) body.get("passengers");
+        List<Passenger> passengers = new ArrayList<>();
+
+        passengerList.forEach(p -> {
+            Passenger ps = new Passenger();
+            ps.setName((String) p.get("name"));
+            ps.setAge(((Number) p.get("age")).intValue());
+            ps.setGender((String) p.get("gender"));
+            ps.setSeatNumber((String) p.get("seatNumber"));
+            ps.setMealPreference((String) p.getOrDefault("mealPreference", null));
+            passengers.add(ps);
+        });
+
+        return ticketService.bookTicket(userId, departureFlightId, returnFlightId, passengers, tripType);
+    }
+
+    @GetMapping("/allflights")
+    public Flux<Flight> getAllFlights() {
+        return flightService.getAllFlights();
+    }
+
+    @GetMapping("/ticket/{pnr}")
+    public Mono<Ticket> getTicket(@PathVariable String pnr) {
+        return ticketService.getTicketByPnr(pnr);
+    }
+
+    @GetMapping("/booking/history/{email}")
+    public Flux<Ticket> history(@PathVariable String email) {
+        return ticketService.getHistory(email);
+    }
+
+    @DeleteMapping("/booking/cancel/{pnr}")
+    public Mono<String> cancel(@PathVariable String pnr, @RequestParam String email) {
+        return ticketService.cancelTicket(pnr, email);
+    }
 
 }

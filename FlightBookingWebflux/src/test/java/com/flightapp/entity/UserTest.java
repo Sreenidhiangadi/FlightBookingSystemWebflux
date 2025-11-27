@@ -38,8 +38,8 @@ class UserTest {
 	@Test
 	void idShouldPersistIfManuallySet() {
 		User user = new User();
-		user.setId("Id123");
-		assertEquals("Id123", user.getId());
+		user.setId(123L);
+		assertEquals(123L, user.getId());
 	}
 
 	@Test

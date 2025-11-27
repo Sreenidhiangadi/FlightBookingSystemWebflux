@@ -1,5 +1,6 @@
 package com.flightapp.entity;
 
 public enum FlightType {
-	ONE_WAY, ROUND_TRIP
+	ONE_WAY,
+    ROUND_TRIP
 }

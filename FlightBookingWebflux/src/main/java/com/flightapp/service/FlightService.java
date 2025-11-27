@@ -1,11 +1,7 @@
 package com.flightapp.service;
 
-import java.time.LocalDateTime;
-import java.util.Map;
-
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.flightapp.entity.Flight;
 import com.flightapp.repository.FlightRepository;
@@ -13,72 +9,73 @@ import com.flightapp.repository.FlightRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
+import java.util.*;
+
 @Service
 public class FlightService {
-	private final FlightRepository flightRepository;
-
-	public FlightService(FlightRepository flightRepository) {
-		this.flightRepository = flightRepository;
+	@Autowired
+public FlightRepository flightRepository;
+	public Mono<Flight> addFlight( Flight flight) {
+		return flightRepository.save(flight);
+	}
+	public Mono<String> deleteFlight(Long id) {
+	    return flightRepository.findById(id)
+	            .switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
+	            .flatMap(flight -> flightRepository.deleteById(id)
+	                    .thenReturn("Flight deleted successfully"));
 	}
 
-	public Mono<String> addFlight(Flight flight) {
-		return flightRepository
-				.findByFromPlaceAndToPlaceAndAirline(flight.getFromPlace(), flight.getToPlace(), flight.getAirline())
-				.next()
-				.flatMap(existing -> Mono
-						.<String>error(new ResponseStatusException(HttpStatus.CONFLICT, "Flight already exists")))
-				.switchIfEmpty(flightRepository.save(flight).thenReturn("Flight added successfully"));
-	}
-
-	public Mono<String> deleteFlight(String id) {
-		return flightRepository.findById(id).switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
-				.flatMap(flight -> flightRepository.deleteById(id).thenReturn("Flight deleted successfully"));
-	}
-
-	public Flux<Flight> getAllFlights() {
+	public Flux<Flight> getAllFlights(){
 		return flightRepository.findAll();
 	}
+	public Mono<Flight> updateFlight(Long id, Map<String, Object> updates) {
+	    return flightRepository.findById(id)
+	            .switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
+	            .flatMap(flight -> {
+	                if (updates.containsKey("airline")) {
+	                    flight.setAirline((String) updates.get("airline"));
+	                }
+	                if (updates.containsKey("fromPlace")) {
+	                    flight.setFromPlace((String) updates.get("fromPlace"));
+	                }
+	                if (updates.containsKey("toPlace")) {
+	                    flight.setToPlace((String) updates.get("toPlace"));
+	                }
+	                if (updates.containsKey("departureTime")) {
+	                    try {
+	                        flight.setDepartureTime(LocalDateTime.parse(updates.get("departureTime").toString()));
+	                    } catch (Exception e) {
+	                        return Mono.error(new RuntimeException("Invalid departureTime format"));
+	                    }
+	                }
 
-	public Mono<Flight> updateFlight(String id, Map<String, Object> updates) {
-		return flightRepository.findById(id).switchIfEmpty(Mono.error(new RuntimeException("Flight not found")))
-				.flatMap(flight -> {
-					try {
-						applyUpdates(flight, updates);
-					} catch (Exception e) {
-						return Mono.error(new RuntimeException("Invalid input format: " + e.getMessage()));
-					}
-					return flightRepository.save(flight);
-				});
+	                if (updates.containsKey("arrivalTime")) {
+	                    flight.setArrivalTime(LocalDateTime.parse((String) updates.get("arrivalTime")));
+	                }
+	                if (updates.containsKey("price")) {
+	                    flight.setPrice(Integer.valueOf(updates.get("price").toString()));
+	                }
+	                if (updates.containsKey("totalSeats")) {
+	                    flight.setTotalSeats(Integer.valueOf(updates.get("totalSeats").toString()));
+	                }
+	                if (updates.containsKey("availableSeats")) {
+	                    flight.setAvailableSeats(Integer.valueOf(updates.get("availableSeats").toString()));
+	                }
+
+	                return flightRepository.save(flight);
+	            });
 	}
 
-	private void applyUpdates(Flight flight, Map<String, Object> updates) {
-		setIfPresent(updates, "airline", val -> flight.setAirline((String) val));
-		setIfPresent(updates, "fromPlace", val -> flight.setFromPlace((String) val));
-		setIfPresent(updates, "toPlace", val -> flight.setToPlace((String) val));
-		setIfPresent(updates, "departureTime", val -> flight.setDepartureTime(LocalDateTime.parse(val.toString())));
-		setIfPresent(updates, "arrivalTime", val -> flight.setArrivalTime(LocalDateTime.parse(val.toString())));
-		setIfPresent(updates, "price", val -> flight.setPrice(Integer.parseInt(val.toString())));
-		setIfPresent(updates, "totalSeats", val -> flight.setTotalSeats(Integer.parseInt(val.toString())));
-		setIfPresent(updates, "availableSeats", val -> flight.setAvailableSeats(Integer.parseInt(val.toString())));
-	}
 
-	private <T> void setIfPresent(Map<String, Object> updates, String key, java.util.function.Consumer<Object> setter) {
-		if (updates.containsKey(key)) {
-			setter.accept(updates.get(key));
-		}
+	public Mono<Flight> searchFlightById( Long id) {
+		return flightRepository.findById(id).switchIfEmpty(Mono.error(new RuntimeException("Flight with this id is not present")));
+		
 	}
-
-	public Mono<Flight> searchFlightById(String id) {
-		return flightRepository.findById(id)
-				.switchIfEmpty(Mono.error(new RuntimeException("Flight with this id is not present")));
-
-	}
-
-	public Flux<Flight> searchFlights(String fromPlace, String toPlace, LocalDateTime start, LocalDateTime end) {
-		return flightRepository.findByFromPlaceAndToPlaceAndDepartureTimeBetween(fromPlace, toPlace, start, end);
-	}
-
-	public Flux<Flight> searchFlightsByAirline(String fromPlace, String toPlace, String airline) {
-		return flightRepository.findByFromPlaceAndToPlaceAndAirline(fromPlace, toPlace, airline);
-	}
+	public Flux<Flight> searchFlights(String fromPlace,String toPlace,LocalDateTime start,LocalDateTime end) {
+        return flightRepository.findByFromPlaceAndToPlaceAndDepartureTimeBetween(fromPlace, toPlace, start, end);
+    }
+	 public Flux<Flight> searchFlightsByAirline(String fromPlace,String toPlace, String airline){
+	        return flightRepository.findByFromPlaceAndToPlaceAndAirline(fromPlace, toPlace, airline);
+	    }
 }

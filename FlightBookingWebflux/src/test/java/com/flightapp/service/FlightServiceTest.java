@@ -1,6 +1,8 @@
 package com.flightapp.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
@@ -35,7 +37,7 @@ class FlightServiceTest {
 	@BeforeEach
 	void setup() {
 		flight = new Flight();
-		flight.setId("1");
+		flight.setId(1L);
 		flight.setAirline("Indigo");
 		flight.setFromPlace("BLR");
 		flight.setToPlace("DEL");
@@ -53,29 +55,35 @@ class FlightServiceTest {
 	            .findByFromPlaceAndToPlaceAndAirline(flight.getFromPlace(),
 	                    flight.getToPlace(),
 	                    flight.getAirline()))
-	            .thenReturn(Flux.empty()); // no existing flight
+	            .thenReturn(Flux.empty()); 
 
 	    when(flightRepository.save(flight)).thenReturn(Mono.just(flight));
 
 	    StepVerifier.create(flightService.addFlight(flight))
-	            .expectNext("Flight added successfully")
+	            .expectNext(flight)    // <-- expect Flight object, not String
 	            .verifyComplete();
+
+	    verify(flightRepository, times(1)).findByFromPlaceAndToPlaceAndAirline(
+	            flight.getFromPlace(), flight.getToPlace(), flight.getAirline());
+	    verify(flightRepository, times(1)).save(flight);
 	}
+
+
 
 
 	@Test
 	void testDeleteFlight_Success() {
-		when(flightRepository.findById("1")).thenReturn(Mono.just(flight));
-		when(flightRepository.deleteById("1")).thenReturn(Mono.empty());
+		when(flightRepository.findById(1L)).thenReturn(Mono.just(flight));
+		when(flightRepository.deleteById(1L)).thenReturn(Mono.empty());
 
-		StepVerifier.create(flightService.deleteFlight("1")).expectNext("Flight deleted successfully").verifyComplete();
+		StepVerifier.create(flightService.deleteFlight(1L)).expectNext("Flight deleted successfully").verifyComplete();
 	}
 
 	@Test
 	void testDeleteFlight_NotFound() {
-		when(flightRepository.findById("2")).thenReturn(Mono.empty());
+		when(flightRepository.findById(2L)).thenReturn(Mono.empty());
 
-		StepVerifier.create(flightService.deleteFlight("2"))
+		StepVerifier.create(flightService.deleteFlight(2L))
 				.expectErrorMatches(e -> e.getMessage().contains("Flight not found")).verify();
 	}
 
@@ -94,10 +102,10 @@ class FlightServiceTest {
 		updates.put("totalSeats", 150);
 		updates.put("availableSeats", 120);
 
-		when(flightRepository.findById("1")).thenReturn(Mono.just(flight));
+		when(flightRepository.findById(1L)).thenReturn(Mono.just(flight));
 		when(flightRepository.save(any(Flight.class))).thenReturn(Mono.just(flight));
 
-		StepVerifier.create(flightService.updateFlight("1", updates))
+		StepVerifier.create(flightService.updateFlight(1L, updates))
 				.expectNextMatches(updated -> updated.getAirline().equals("Air India") && updated.getPrice() == 6000
 						&& updated.getTotalSeats() == 150 && updated.getAvailableSeats() == 120)
 				.verifyComplete();
@@ -105,25 +113,25 @@ class FlightServiceTest {
 
 	@Test
 	void testUpdateFlight_NotFound() {
-		when(flightRepository.findById("2")).thenReturn(Mono.empty());
+		when(flightRepository.findById(2L)).thenReturn(Mono.empty());
 
-		StepVerifier.create(flightService.updateFlight("2", new HashMap<>()))
+		StepVerifier.create(flightService.updateFlight(2L, new HashMap<>()))
 				.expectErrorMatches(e -> e.getMessage().contains("Flight not found")).verify();
 	}
 
 	@Test
 	void testSearchFlightById_NotFound() {
-		when(flightRepository.findById("2")).thenReturn(Mono.empty());
+		when(flightRepository.findById(2L)).thenReturn(Mono.empty());
 
-		StepVerifier.create(flightService.searchFlightById("2"))
+		StepVerifier.create(flightService.searchFlightById(2L))
 				.expectErrorMatches(e -> e.getMessage().contains("Flight with this id is not present")).verify();
 	}
 
 	@Test
 	void testSearchFlightById_Success() {
-		when(flightRepository.findById("1")).thenReturn(Mono.just(flight));
+		when(flightRepository.findById(2L)).thenReturn(Mono.just(flight));
 
-		StepVerifier.create(flightService.searchFlightById("1")).expectNext(flight).verifyComplete();
+		StepVerifier.create(flightService.searchFlightById(2L)).expectNext(flight).verifyComplete();
 	}
 
 	@Test

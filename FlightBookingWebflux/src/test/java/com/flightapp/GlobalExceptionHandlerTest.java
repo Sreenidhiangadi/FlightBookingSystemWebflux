@@ -33,9 +33,7 @@ class GlobalErrorHandlerTest {
 		Mockito.when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));
 		WebExchangeBindException ex = new WebExchangeBindException(null, bindingResult);
 
-		Mono<Map<String, String>> result = errorHandler.handleValidationExceptions(ex);
-
-		StepVerifier.create(result)
+		StepVerifier.create(errorHandler.handleValidationExceptions(ex))
 				.assertNext(map -> {
 					assertEquals(1, map.size());
 					assertEquals("Name cannot be blank", map.get("name"));

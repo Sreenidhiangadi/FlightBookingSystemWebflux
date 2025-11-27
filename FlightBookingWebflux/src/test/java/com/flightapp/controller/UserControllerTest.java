@@ -37,35 +37,37 @@ class UserControllerTest {
 
 	@BeforeEach
 	void setUp() {
-		authService = mock(AuthService.class);
-		flightService = mock(FlightService.class);
-		ticketService = mock(TicketService.class);
-		userController = new UserController(authService, flightService, ticketService);
+	    authService = mock(AuthService.class);
+	    flightService = mock(FlightService.class);
+	    ticketService = mock(TicketService.class);
+	    userController = new UserController(authService, flightService, ticketService);
 
-		user = new User();
-		user.setEmail("user@example.com");
-		user.setPassword("password");
+	    user = new User();
+	    user.setId(1L);                 
+	    user.setEmail("user@example.com");
+	    user.setPassword("password");
 
-		flight = new Flight();
-		flight.setId("F1");
-		flight.setAirline("AirlineA");
-		flight.setFromPlace("CityA");
-		flight.setToPlace("CityB");
-		flight.setDepartureTime(LocalDateTime.now().plusDays(1));
-		flight.setArrivalTime(LocalDateTime.now().plusDays(1).plusHours(2));
-		flight.setPrice(500);
-		flight.setTotalSeats(100);
-		flight.setAvailableSeats(100);
+	    flight = new Flight();
+	    flight.setId(1L);                
+	    flight.setAirline("AirlineA");
+	    flight.setFromPlace("CityA");
+	    flight.setToPlace("CityB");
+	    flight.setDepartureTime(LocalDateTime.now().plusDays(1));
+	    flight.setArrivalTime(LocalDateTime.now().plusDays(1).plusHours(2));
+	    flight.setPrice(500);
+	    flight.setTotalSeats(100);
+	    flight.setAvailableSeats(100);
 
-		ticket = new Ticket();
-		ticket.setPnr("PNR123");
-		ticket.setUserId("U1");
-		ticket.setDepartureFlightId("F1");
-		ticket.setReturnFlightId(null);
-		ticket.setTripType(FlightType.ONE_WAY);
-		ticket.setBookingTime(LocalDateTime.now());
-		ticket.setPassengers(List.of());
+	    ticket = new Ticket();
+	    ticket.setId(1L);               
+	    ticket.setPnr("PNR123");
+	    ticket.setUserId(1L);           
+	    ticket.setDepartureFlightId(1L);  
+	    ticket.setReturnFlightId(null);
+	    ticket.setTripType(FlightType.ONE_WAY);
+	    ticket.setBookingTime(LocalDateTime.now());
 	}
+
 
 	@Test
 	void testRegister() {

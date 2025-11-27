@@ -121,10 +121,6 @@ class PassengerTest {
 		passenger.setTicketId(null);
 		violations = validator.validate(passenger);
 		assertTrue(violations.isEmpty());
-
-		passenger.setTicketId("TICKET123");
-		violations = validator.validate(passenger);
-		assertTrue(violations.isEmpty());
 	}
 
 	@Test
@@ -132,7 +128,6 @@ class PassengerTest {
 		Passenger passenger = new Passenger();
 		passenger.setAge(25);
 		passenger.setMealPreference("Non-Veg");
-		passenger.setTicketId("TICKET123");
 
 		passenger.setAge(Integer.MAX_VALUE);
 		passenger.setName("Srikanth");

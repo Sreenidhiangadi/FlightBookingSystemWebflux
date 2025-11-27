@@ -33,25 +33,33 @@ class AdminControllerTest {
 	private User user;
 	private Flight flight;
 	private Ticket ticket;
-
 	@BeforeEach
 	void setUp() {
-		authService = mock(AuthService.class);
-		flightService = mock(FlightService.class);
-		ticketService = mock(TicketService.class);
-		adminController = new AdminController(authService, flightService, ticketService);
+	    authService = mock(AuthService.class);
+	    flightService = mock(FlightService.class);
+	    ticketService = mock(TicketService.class);
+	    adminController = new AdminController(authService, flightService, ticketService);
 
-		user = new User();
-		user.setEmail("admin@example.com");
-		user.setPassword("password");
+	    user = new User();
+	    user.setId(1L);             
+	    user.setEmail("admin@example.com");
+	    user.setPassword("password");
+	    flight = new Flight();
+	    flight.setId(1L);            
+	    flight.setAirline("TestFlight");
+	    flight.setFromPlace("CityA");
+	    flight.setToPlace("CityB");
+	    flight.setDepartureTime(LocalDateTime.now().plusDays(1));
+	    flight.setArrivalTime(LocalDateTime.now().plusDays(1).plusHours(2));
+	    flight.setTotalSeats(100);
+	    flight.setAvailableSeats(100);
+	    flight.setPrice(200);
 
-		flight = new Flight();
-		flight.setId("F1");
-		flight.setAirline("TestFlight");
-
-		ticket = new Ticket();
-		ticket.setId("T1");
+	    ticket = new Ticket();
+	    ticket.setId(1L);           
+	    ticket.setPnr("PNR123");
 	}
+
 
 	@Test
 	void testAdminLogin() {
@@ -82,30 +90,31 @@ class AdminControllerTest {
 
 	@Test
 	void testUpdateFlight() {
-		Map<String, Object> updates = new HashMap<>();
-		updates.put("airline", "UpdatedAirline");
-		updates.put("price", 500);
+	    Long flightId = 1L; 
 
-		Flight updatedFlight = new Flight();
-		updatedFlight.setId("F1");
-		updatedFlight.setAirline("UpdatedAirline");
-		updatedFlight.setPrice(500);
-		updatedFlight.setFromPlace("CityA");
-		updatedFlight.setToPlace("CityB");
-		updatedFlight.setDepartureTime(LocalDateTime.now().plusDays(1));
-		updatedFlight.setArrivalTime(LocalDateTime.now().plusDays(1).plusHours(2));
-		updatedFlight.setTotalSeats(100);
-		updatedFlight.setAvailableSeats(100);
+	    Map<String, Object> updates = new HashMap<>();
+	    updates.put("airline", "UpdatedAirline");
+	    updates.put("price", 500);
 
-		when(flightService.updateFlight("F1", updates)).thenReturn(Mono.just(updatedFlight));
+	    Flight updatedFlight = new Flight();
+	    updatedFlight.setId(flightId);  
+	    updatedFlight.setAirline("UpdatedAirline");
+	    updatedFlight.setPrice(500);
+	    updatedFlight.setFromPlace("CityA");
+	    updatedFlight.setToPlace("CityB");
+	    updatedFlight.setDepartureTime(LocalDateTime.now().plusDays(1));
+	    updatedFlight.setArrivalTime(LocalDateTime.now().plusDays(1).plusHours(2));
+	    updatedFlight.setTotalSeats(100);
+	    updatedFlight.setAvailableSeats(100);
 
-		StepVerifier.create(adminController.update("F1", updates))
-				.expectNextMatches(f -> f.getAirline().equals("UpdatedAirline") && f.getPrice() == 500)
-				.verifyComplete();
+	    when(flightService.updateFlight(flightId, updates)).thenReturn(Mono.just(updatedFlight));
 
-		verify(flightService, times(1)).updateFlight("F1", updates);
+	    StepVerifier.create(adminController.update(flightId, updates))
+	            .expectNextMatches(f -> f.getAirline().equals("UpdatedAirline") && f.getPrice() == 500)
+	            .verifyComplete();
+
+	    verify(flightService, times(1)).updateFlight(flightId, updates);
 	}
-
 	@Test
 	void testAddFlight() {
 		when(flightService.addFlight(flight)).thenReturn(Mono.empty());
@@ -117,10 +126,13 @@ class AdminControllerTest {
 
 	@Test
 	void testDeleteFlight() {
-		when(flightService.deleteFlight("F1")).thenReturn(Mono.just("Flight deleted successfully"));
+	    Long flightId = 1L; 
+	    when(flightService.deleteFlight(flightId)).thenReturn(Mono.just("Flight deleted successfully"));
 
-		StepVerifier.create(adminController.delete("F1")).expectNext("Flight deleted successfully").verifyComplete();
+	    StepVerifier.create(adminController.delete(flightId))
+	            .expectNext("Flight deleted successfully")
+	            .verifyComplete();
 
-		verify(flightService, times(1)).deleteFlight("F1");
+	    verify(flightService, times(1)).deleteFlight(flightId);
 	}
 }

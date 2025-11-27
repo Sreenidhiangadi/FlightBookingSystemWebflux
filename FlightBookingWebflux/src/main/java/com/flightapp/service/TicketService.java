@@ -109,28 +109,46 @@ public class TicketService {
 					if (ticket.isCanceled()) {
 						return Mono.just("Ticket already cancelled");
 					}
-					final int seatCount;
-					if (ticket.getSeatsBooked() != null && !ticket.getSeatsBooked().isEmpty()) {
-						seatCount = ticket.getSeatsBooked().split(",").length;
-					} else {
-						seatCount = 1;
-					}
 
-					Mono<Flight> saveDep = flightRepository.findById(ticket.getDepartureFlightId()).flatMap(dep -> {
-						dep.setAvailableSeats(dep.getAvailableSeats() + seatCount);
-						return flightRepository.save(dep);
-					});
-					Mono<Flight> saveRet = Mono.empty();
-					if (ticket.getReturnFlightId() != null) {
-						saveRet = flightRepository.findById(ticket.getReturnFlightId()).flatMap(ret -> {
-							ret.setAvailableSeats(ret.getAvailableSeats() + seatCount);
-							return flightRepository.save(ret);
-						});
-					}
-					ticket.setCanceled(true);
-					Mono<Ticket> saveTicket = ticketRepository.save(ticket);
+					return flightRepository.findById(ticket.getDepartureFlightId())
+							.switchIfEmpty(Mono.error(new RuntimeException("Departure flight not found")))
+							.flatMap(depFlight -> {
 
-					return Mono.when(saveDep, saveRet, saveTicket).then(Mono.just("Cancelled Successfully"));
+								LocalDateTime now = LocalDateTime.now();
+								LocalDateTime limit = now.plusHours(24);
+
+								if (depFlight.getDepartureTime().isBefore(limit)) {
+									return Mono.error(new RuntimeException(
+											"Cancellation not allowed within 24 hours of departure"));
+								}
+
+								final int seatCount;
+								if (ticket.getSeatsBooked() != null && !ticket.getSeatsBooked().isEmpty()) {
+									seatCount = ticket.getSeatsBooked().split(",").length;
+								} else {
+									seatCount = 1;
+								}
+
+								Mono<Flight> saveDep = flightRepository.findById(ticket.getDepartureFlightId())
+										.flatMap(dep -> {
+											dep.setAvailableSeats(dep.getAvailableSeats() + seatCount);
+											return flightRepository.save(dep);
+										});
+
+								Mono<Flight> saveRet = Mono.empty();
+								if (ticket.getReturnFlightId() != null) {
+									saveRet = flightRepository.findById(ticket.getReturnFlightId()).flatMap(ret -> {
+										ret.setAvailableSeats(ret.getAvailableSeats() + seatCount);
+										return flightRepository.save(ret);
+									});
+								}
+
+								ticket.setCanceled(true);
+								Mono<Ticket> saveTicket = ticketRepository.save(ticket);
+
+								return Mono.when(saveDep, saveRet, saveTicket)
+										.then(Mono.just("Cancelled Successfully"));
+							});
 				});
 	}
 

@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.flightapp.entity.User;
@@ -15,9 +14,11 @@ import reactor.core.publisher.Mono;
 @Service
 public class AuthService {
 	private UserRepository userRepository;
+
 	public AuthService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+		this.userRepository = userRepository;
+	}
+
 	private Map<String, String> userSessions = new HashMap<>();
 
 	public Mono<User> register(User user) {

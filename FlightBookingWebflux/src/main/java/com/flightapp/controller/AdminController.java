@@ -20,11 +20,12 @@ import com.flightapp.service.AuthService;
 import com.flightapp.service.FlightService;
 import com.flightapp.service.TicketService;
 
+import jakarta.validation.Valid;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/api/v1.0/flight/airline")
+@RequestMapping("/api/flight/airline")
 public class AdminController {
 
 	private final AuthService authService;
@@ -39,14 +40,14 @@ public class AdminController {
 
 	@PostMapping("/admin/login")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<String> adminLogin(@RequestBody User user) {
+	public Mono<String> adminLogin(@Valid @RequestBody User user) {
 		return authService.login(user.getEmail(), user.getPassword());
 
 	}
 
 	@PostMapping("/getadmin")
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<User> getAdmin(@RequestBody User user) {
+	public Mono<User> getAdmin(@Valid @RequestBody User user) {
 		return authService.getAdmin(user.getEmail());
 
 	}
@@ -58,12 +59,12 @@ public class AdminController {
 
 	@PostMapping("/inventory/add")
 	@ResponseStatus(HttpStatus.CREATED)
-	public Mono<String> addFlight(@RequestBody Flight flight) {
-		return flightService.addFlight(flight).thenReturn("Flight added successfully");
+	public Mono<String> addFlight(@Valid @RequestBody Flight flight) {
+		return flightService.addFlight(flight);
 	}
 
 	@PutMapping("/inventory/update/{id}")
-	public Mono<Flight> update(@PathVariable String id, @RequestBody Map<String, Object> updates) {
+	public Mono<Flight> update(@PathVariable String id, @Valid @RequestBody Map<String, Object> updates) {
 		return flightService.updateFlight(id, updates);
 	}
 

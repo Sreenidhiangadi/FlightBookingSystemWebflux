@@ -1,72 +1,63 @@
 package com.flightapp;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.support.WebExchangeBindException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
-import reactor.core.publisher.Mono;
-
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ResponseStatusException;
+
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
-    // Constant to avoid repeating the "timestamp" literal
-    private static final String TIMESTAMP = "timestamp";
+    @ExceptionHandler(WebExchangeBindException.class)
+    public Mono<Map<String, String>> handleValidationExceptions(WebExchangeBindException exception) {
 
-    private Mono<ResponseEntity<Map<String, Object>>> buildResponse(
-            HttpStatus status, String error, String message, Map<String, Object> additionalFields) {
+        String combinedErrors = exception.getFieldErrors()
+            .stream()
+            .map(error -> error.getDefaultMessage())  
+            .distinct()                              
+            .reduce((msg1, msg2) -> msg1 + ", " + msg2)
+            .orElse("Validation error");
 
-        Map<String, Object> body = new HashMap<>();
-        body.put(TIMESTAMP, LocalDateTime.now());
-        body.put("status", status.value());
-        body.put("error", error);
-        body.put("message", message);
+        Map<String, String> response = new HashMap<>();
+        response.put("error", combinedErrors);  
 
-        if (additionalFields != null) {
-            body.putAll(additionalFields);
+        return Mono.just(response);
+    }
+
+    @ExceptionHandler(DuplicateKeyException.class)
+    public Mono<Map<String, String>> handleDuplicateKeyException(DuplicateKeyException ex) {
+
+        Map<String, String> errors = new HashMap<>();
+        String message = ex.getMessage();
+
+        if (message.contains("email")) {
+            errors.put("error", "Email already exists");
+        } else {
+            errors.put("error", "Duplicate key error");
         }
 
-        return Mono.just(ResponseEntity.status(status).body(body));
+        return Mono.just(errors);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public Mono<Map<String, String>> handleResponseStatusException(ResponseStatusException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getReason());
+        return Mono.just(error);
     }
 
     @ExceptionHandler(Exception.class)
-    public Mono<ResponseEntity<Map<String, Object>>> handleGenericException(Exception ex) {
-        return buildResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "Internal Server Error",
-                ex.getMessage(),
-                null
-        );
-    }
-
-    @ExceptionHandler(WebExchangeBindException.class)
-    public Mono<ResponseEntity<Map<String, Object>>> handleValidationException(WebExchangeBindException ex) {
-        Map<String, Object> additionalFields = new HashMap<>();
-        Map<String, String> fieldErrors = ex.getFieldErrors().stream()
-                .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
-        additionalFields.put("fieldErrors", fieldErrors);
-
-        return buildResponse(
-                HttpStatus.BAD_REQUEST,
-                "Validation Error",
-                "Invalid input",
-                additionalFields
-        );
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public Mono<ResponseEntity<Map<String, Object>>> handleNotFoundException(IllegalArgumentException ex) {
-        return buildResponse(
-                HttpStatus.NOT_FOUND,
-                "Not Found",
-                ex.getMessage(),
-                null
-        );
+    public Mono<Map<String, String>> handleGeneralException(Exception ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", "Internal server error");
+        return Mono.just(error);
     }
 }

@@ -26,10 +26,10 @@ public class Flight {
 	@NotBlank(message = "To place is required")
 	private String toPlace;
 
-	@NotNull(message = "Departure time  is required")
+	
 	private LocalDateTime departureTime;
 
-	@NotNull(message = "Arrival time  is required")
+
 	private LocalDateTime arrivalTime;
 
 	@Min(value = 1, message = "Price must be atleast 1")
@@ -40,7 +40,5 @@ public class Flight {
 
 	@Min(value = 0, message = "Available seats cant be neagtive")
 	private int availableSeats;
-
-	
 
 }

@@ -48,10 +48,20 @@ class FlightServiceTest {
 
 	@Test
 	void testAddFlight() {
-		when(flightRepository.save(flight)).thenReturn(Mono.just(flight));
 
-		StepVerifier.create(flightService.addFlight(flight)).expectNext(flight).verifyComplete();
+	    when(flightRepository
+	            .findByFromPlaceAndToPlaceAndAirline(flight.getFromPlace(),
+	                    flight.getToPlace(),
+	                    flight.getAirline()))
+	            .thenReturn(Flux.empty()); // no existing flight
+
+	    when(flightRepository.save(flight)).thenReturn(Mono.just(flight));
+
+	    StepVerifier.create(flightService.addFlight(flight))
+	            .expectNext("Flight added successfully")
+	            .verifyComplete();
 	}
+
 
 	@Test
 	void testDeleteFlight_Success() {

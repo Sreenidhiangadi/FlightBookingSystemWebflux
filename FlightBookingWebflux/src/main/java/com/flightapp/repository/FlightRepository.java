@@ -9,7 +9,8 @@ import com.flightapp.entity.Flight;
 import reactor.core.publisher.Flux;
 
 public interface FlightRepository extends ReactiveMongoRepository<Flight, String> {
-	Flux<Flight> findByFromPlaceAndToPlaceAndDepartureTimeBetween(String fromPlace, String toPlace, LocalDateTime start,LocalDateTime end);
+	Flux<Flight> findByFromPlaceAndToPlaceAndDepartureTimeBetween(String fromPlace, String toPlace, LocalDateTime start,
+			LocalDateTime end);
 
 	Flux<Flight> findByFromPlaceAndToPlaceAndAirline(String fromPlace, String toPlace, String airline);
 }

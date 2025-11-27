@@ -19,7 +19,7 @@ public class Ticket {
 	@Id
 	private String id;
 
-	@NotBlank(message = "PNR cannot be blank")
+	
 	private String pnr;
 
 	@NotBlank(message = "User ID is required")
@@ -33,7 +33,7 @@ public class Ticket {
 	@NotNull(message = "Trip type is required")
 	private FlightType tripType;
 
-	@NotNull(message = "Booking time is required")
+	
 	private LocalDateTime bookingTime;
 
 	private String seatsBooked;

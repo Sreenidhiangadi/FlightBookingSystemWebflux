@@ -1,94 +1,112 @@
 package com.flightapp;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.support.WebExchangeBindException;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.support.WebExchangeBindException;
 
-class GlobalExceptionHandlerTest {
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-    private GlobalExceptionHandler exceptionHandler;
+class GlobalErrorHandlerTest {
 
-    @BeforeEach
-    void setUp() {
-        exceptionHandler = new GlobalExceptionHandler();
-    }
+	private GlobalExceptionHandler errorHandler;
 
-    @Test
-    void testHandleGenericException() {
-        Exception ex = new Exception("Something went wrong");
+	@BeforeEach
+	void setup() {
+		errorHandler = new GlobalExceptionHandler();
+	}
 
-        Mono<ResponseEntity<Map<String, Object>>> responseMono = exceptionHandler.handleGenericException(ex);
+	@Test
+	void testHandleValidationExceptions_singleFieldError() {
+		BindingResult bindingResult = Mockito.mock(BindingResult.class);
+		FieldError fieldError = new FieldError("user", "name", "Name cannot be blank");
 
-        StepVerifier.create(responseMono)
-                .assertNext(response -> {
-                    assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-                    Map<String, Object> body = response.getBody();
-                    assertNotNull(body);
-                    assertEquals(500, body.get("status"));
-                    assertEquals("Internal Server Error", body.get("error"));
-                    assertEquals("Something went wrong", body.get("message"));
-                    assertNotNull(body.get("timestamp"));
-                })
-                .verifyComplete();
-    }
+		Mockito.when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));
+		WebExchangeBindException ex = new WebExchangeBindException(null, bindingResult);
 
-    @Test
-    void testHandleValidationException() {
-        // Mock WebExchangeBindException
-        WebExchangeBindException ex = mock(WebExchangeBindException.class);
+		Mono<Map<String, String>> result = errorHandler.handleValidationExceptions(ex);
 
-        FieldError fieldError = new FieldError("objectName", "field1", "must not be null");
-        when(ex.getFieldErrors()).thenReturn(List.of(fieldError));
+		StepVerifier.create(result)
+				.assertNext(map -> {
+					assertEquals(1, map.size());
+					assertEquals("Name cannot be blank", map.get("name"));
+				})
+				.verifyComplete();
+	}
 
-        Mono<ResponseEntity<Map<String, Object>>> responseMono = exceptionHandler.handleValidationException(ex);
+	@Test
+	void testHandleValidationExceptions_multipleFieldErrors() {
+		BindingResult bindingResult = Mockito.mock(BindingResult.class);
 
-        StepVerifier.create(responseMono)
-                .assertNext(response -> {
-                    assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-                    Map<String, Object> body = response.getBody();
-                    assertNotNull(body);
-                    assertEquals(400, body.get("status"));
-                    assertEquals("Validation Error", body.get("error"));
-                    assertEquals("Invalid input", body.get("message"));
+		FieldError error1 = new FieldError("user", "name", "Name cannot be blank");
+		FieldError error2 = new FieldError("user", "email", "Email cannot be blank");
 
-                    @SuppressWarnings("unchecked")
-                    Map<String, String> fieldErrors = (Map<String, String>) body.get("fieldErrors");
-                    assertNotNull(fieldErrors);
-                    assertEquals(1, fieldErrors.size());
-                    assertEquals("must not be null", fieldErrors.get("field1"));
+		Mockito.when(bindingResult.getFieldErrors()).thenReturn(List.of(error1, error2));
+		WebExchangeBindException ex = new WebExchangeBindException(null, bindingResult);
 
-                    assertNotNull(body.get("timestamp"));
-                })
-                .verifyComplete();
-    }
+		StepVerifier.create(errorHandler.handleValidationExceptions(ex))
+				.assertNext(map -> {
+					assertEquals(2, map.size());
+					assertEquals("Name cannot be blank", map.get("name"));
+					assertEquals("Email cannot be blank", map.get("email"));
+				})
+				.verifyComplete();
+	}
 
-    @Test
-    void testHandleNotFoundException() {
-        IllegalArgumentException ex = new IllegalArgumentException("Data not found");
+	@Test
+	void testHandleValidationExceptions_noFieldErrors() {
+		BindingResult bindingResult = Mockito.mock(BindingResult.class);
+		Mockito.when(bindingResult.getFieldErrors()).thenReturn(List.of());
 
-        Mono<ResponseEntity<Map<String, Object>>> responseMono = exceptionHandler.handleNotFoundException(ex);
+		WebExchangeBindException ex = new WebExchangeBindException(null, bindingResult);
 
-        StepVerifier.create(responseMono)
-                .assertNext(response -> {
-                    assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-                    Map<String, Object> body = response.getBody();
-                    assertNotNull(body);
-                    assertEquals(404, body.get("status"));
-                    assertEquals("Not Found", body.get("error"));
-                    assertEquals("Data not found", body.get("message"));
-                    assertNotNull(body.get("timestamp"));
-                })
-                .verifyComplete();
-    }
+		StepVerifier.create(errorHandler.handleValidationExceptions(ex))
+				.assertNext(map -> assertEquals(0, map.size()))
+				.verifyComplete();
+	}
+
+	@Test
+	void testHandleDuplicateKeyException_emailCase() {
+		DuplicateKeyException ex = new DuplicateKeyException("Duplicate key error: email already exists");
+
+		StepVerifier.create(errorHandler.handleDuplicateKeyException(ex))
+				.assertNext(map -> {
+					assertEquals(1, map.size());
+					assertEquals("Email already exists", map.get("email"));
+				})
+				.verifyComplete();
+	}
+
+	@Test
+	void testHandleDuplicateKeyException_otherCase() {
+		DuplicateKeyException ex = new DuplicateKeyException("Duplicate key error: username already exists");
+
+		StepVerifier.create(errorHandler.handleDuplicateKeyException(ex))
+				.assertNext(map -> {
+					assertEquals(1, map.size());
+					assertEquals("Duplicate key error", map.get("error"));
+				})
+				.verifyComplete();
+	}
+
+	@Test
+	void testHandleGeneralException_basic() {
+		Exception ex = new Exception("Some error");
+
+		StepVerifier.create(errorHandler.handleGeneralException(ex))
+				.assertNext(map -> {
+					assertEquals(1, map.size());
+					assertEquals("Internal server error", map.get("error"));
+				})
+				.verifyComplete();
+	}
 }

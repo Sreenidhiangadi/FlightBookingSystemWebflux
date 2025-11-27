@@ -127,7 +127,7 @@ class UserControllerTest {
 	void testBookTicket_Success() {
 		when(ticketService.bookTicket("U1", "F1", null, List.of(), FlightType.ONE_WAY)).thenReturn(Mono.just("PNR123"));
 
-		StepVerifier.create(userController.bookTicket(Mono.just(ticket)))
+		StepVerifier.create(userController.bookTicket(ticket))
 				.expectNextMatches(response -> response.getBody().get("pnr").equals("PNR123")).verifyComplete();
 
 		verify(ticketService, times(1)).bookTicket("U1", "F1", null, List.of(), FlightType.ONE_WAY);
@@ -138,7 +138,7 @@ class UserControllerTest {
 		when(ticketService.bookTicket("U1", "F1", null, List.of(), FlightType.ONE_WAY))
 				.thenReturn(Mono.error(new RuntimeException("Booking failed")));
 
-		StepVerifier.create(userController.bookTicket(Mono.just(ticket)))
+		StepVerifier.create(userController.bookTicket(ticket))
 				.expectNextMatches(response -> response.getStatusCode().is4xxClientError()
 						&& response.getBody().get("error").equals("Booking failed"))
 				.verifyComplete();
